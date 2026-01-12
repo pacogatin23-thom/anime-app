@@ -217,6 +217,7 @@ function useDebounced<T>(value: T, ms = 250): T {
 
 const LS_FAV = "animeapp:favs";
 const LS_SEEN = "animeapp:seen";
+const LS_DISLIKED = "animeapp:disliked";
 
 function loadSet(key: string): Set<string> {
   try {
@@ -258,6 +259,7 @@ export default function App() {
 
   const [favs, setFavs] = useState<Set<string>>(() => loadSet(LS_FAV));
   const [seen, setSeen] = useState<Set<string>>(() => loadSet(LS_SEEN));
+  const [disliked, setDisliked] = useState<Set<string>>(() => loadSet(LS_DISLIKED));
   const [onlyFavs, setOnlyFavs] = useState<boolean>(false);
 
   const [trailerId, setTrailerId] = useState<string>("");
@@ -267,6 +269,12 @@ export default function App() {
   const [recPick, setRecPick] = useState<AnimeItem | null>(null);
   const [recQuery, setRecQuery] = useState<string>("");
   const recQueryDebounced = useDebounced<string>(recQuery, 200);
+
+  // NUEVO: modal de “No me gustó → ¿Qué evitar?”
+  const [avoidOpen, setAvoidOpen] = useState<boolean>(false);
+  const [avoidPick, setAvoidPick] = useState<AnimeItem | null>(null);
+  const [avoidQuery, setAvoidQuery] = useState<string>("");
+  const avoidQueryDebounced = useDebounced<string>(avoidQuery, 200);
 
   const topRef = useRef<HTMLDivElement | null>(null);
 
@@ -392,6 +400,15 @@ export default function App() {
     saveSet(LS_SEEN, next);
   }
 
+  function toggleDisliked(a: AnimeItem): void {
+    const key = getKey(a);
+    const next = new Set(disliked);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    setDisliked(next);
+    saveSet(LS_DISLIKED, next);
+  }
+
   function openTrailer(a: AnimeItem): void {
     const id = getTrailerId(a);
     if (id.length > 0) {
@@ -414,38 +431,78 @@ export default function App() {
     setQ(getTitle(a));
     topRef.current?.scrollIntoView({ behavior: "smooth" });
   }
-const recommendFrom = useCallback((base: AnimeItem): AnimeItem[] => {
-  const baseGenres = new Set(getGenres(base).map((g) => g.toLowerCase()));
-  const baseMood = new Set(getMood(base).map((m) => m.toLowerCase()));
-  const baseType = getType(base);
-  const baseYear = getYear(base);
-  const baseKey = getKey(base);
 
-  const scored = animes
-    .filter((a) => getKey(a) !== baseKey)
-    .filter((a) => !seen.has(getKey(a)))
-    .map((a) => {
-      let score = 0;
+  const recommendFrom = useCallback(
+    (base: AnimeItem): AnimeItem[] => {
+      const baseGenres = new Set(getGenres(base).map((g) => g.toLowerCase()));
+      const baseMood = new Set(getMood(base).map((m) => m.toLowerCase()));
+      const baseType = getType(base);
+      const baseYear = getYear(base);
+      const baseKey = getKey(base);
 
-      for (const g of getGenres(a)) if (baseGenres.has(g.toLowerCase())) score += 3;
-      for (const m of getMood(a)) if (baseMood.has(m.toLowerCase())) score += 2;
+      const scored = animes
+        .filter((a) => getKey(a) !== baseKey)
+        .filter((a) => !seen.has(getKey(a)))
+        .filter((a) => !disliked.has(getKey(a))) // NUEVO: no recomendar lo que marcaste como “no me gustó”
+        .map((a) => {
+          let score = 0;
 
-      if (getType(a) === baseType) score += 1;
+          for (const g of getGenres(a)) if (baseGenres.has(g.toLowerCase())) score += 3;
+          for (const m of getMood(a)) if (baseMood.has(m.toLowerCase())) score += 2;
 
-      const dy = Math.abs(getYear(a) - baseYear);
-      if (dy <= 1) score += 2;
-      else if (dy <= 3) score += 1;
+          if (getType(a) === baseType) score += 1;
 
-      return { a, score };
-    })
-    .filter((x) => x.score > 0)
-    .sort((x, y) => y.score - x.score)
-    .slice(0, 24)
-    .map((x) => x.a);
+          const dy = Math.abs(getYear(a) - baseYear);
+          if (dy <= 1) score += 2;
+          else if (dy <= 3) score += 1;
 
-  return scored;
-}, [animes, seen]);
+          return { a, score };
+        })
+        .filter((x) => x.score > 0)
+        .sort((x, y) => y.score - x.score)
+        .slice(0, 24)
+        .map((x) => x.a);
 
+      return scored;
+    },
+    [animes, seen, disliked]
+  );
+
+  // NUEVO: lista “para evitar” (similares a lo que NO te gustó)
+  const avoidFrom = useCallback(
+    (base: AnimeItem): AnimeItem[] => {
+      const baseGenres = new Set(getGenres(base).map((g) => g.toLowerCase()));
+      const baseMood = new Set(getMood(base).map((m) => m.toLowerCase()));
+      const baseType = getType(base);
+      const baseYear = getYear(base);
+      const baseKey = getKey(base);
+
+      const scored = animes
+        .filter((a) => getKey(a) !== baseKey)
+        .filter((a) => !seen.has(getKey(a))) // “qué NO mirar” → te muestro cosas que todavía no viste
+        .map((a) => {
+          let score = 0;
+
+          for (const g of getGenres(a)) if (baseGenres.has(g.toLowerCase())) score += 3;
+          for (const m of getMood(a)) if (baseMood.has(m.toLowerCase())) score += 2;
+
+          if (getType(a) === baseType) score += 1;
+
+          const dy = Math.abs(getYear(a) - baseYear);
+          if (dy <= 1) score += 2;
+          else if (dy <= 3) score += 1;
+
+          return { a, score };
+        })
+        .filter((x) => x.score > 0)
+        .sort((x, y) => y.score - x.score)
+        .slice(0, 24)
+        .map((x) => x.a);
+
+      return scored;
+    },
+    [animes, seen]
+  );
 
   const recSearchList = useMemo(() => {
     const qq = recQueryDebounced.trim().toLowerCase();
@@ -453,11 +510,22 @@ const recommendFrom = useCallback((base: AnimeItem): AnimeItem[] => {
     return animes.filter((a) => getTitle(a).toLowerCase().includes(qq)).slice(0, 30);
   }, [animes, recQueryDebounced]);
 
- const recResults = useMemo(() => {
-  if (recPick === null) return [];
-  return recommendFrom(recPick);
-}, [recPick, recommendFrom]);
+  const recResults = useMemo(() => {
+    if (recPick === null) return [];
+    return recommendFrom(recPick);
+  }, [recPick, recommendFrom]);
 
+  // NUEVO: búsqueda y resultados del modal “avoid”
+  const avoidSearchList = useMemo(() => {
+    const qq = avoidQueryDebounced.trim().toLowerCase();
+    if (qq.length === 0) return animes.slice(0, 30);
+    return animes.filter((a) => getTitle(a).toLowerCase().includes(qq)).slice(0, 30);
+  }, [animes, avoidQueryDebounced]);
+
+  const avoidResults = useMemo(() => {
+    if (avoidPick === null) return [];
+    return avoidFrom(avoidPick);
+  }, [avoidPick, avoidFrom]);
 
   return (
     <div className="page">
@@ -477,6 +545,11 @@ const recommendFrom = useCallback((base: AnimeItem): AnimeItem[] => {
             </button>
             <button className="secondary" onClick={() => setRecOpen(true)}>
               Ya la vi → Recomendame
+            </button>
+
+            {/* NUEVO */}
+            <button className="secondary" onClick={() => setAvoidOpen(true)}>
+              No me gustó → ¿Qué evitar?
             </button>
           </div>
         </div>
@@ -697,11 +770,7 @@ const recommendFrom = useCallback((base: AnimeItem): AnimeItem[] => {
                     const t = getTitle(a);
                     const active = recPick !== null ? getKey(recPick) === k : false;
                     return (
-                      <button
-                        key={`${k}-${i}`}
-                        className={`recItem ${active ? "active" : ""}`}
-                        onClick={() => setRecPick(a)}
-                      >
+                      <button key={`${k}-${i}`} className={`recItem ${active ? "active" : ""}`} onClick={() => setRecPick(a)}>
                         <span className="recItemTitle">{t}</span>
                         <span className="recItemMeta">
                           {getYear(a) > 0 ? String(getYear(a)) : "—"} • {getType(a)}
@@ -712,7 +781,8 @@ const recommendFrom = useCallback((base: AnimeItem): AnimeItem[] => {
                 </div>
 
                 <p className="hint">
-                  Tip: marcá animes como <b>vistas</b> (✓) para que no te los recomiende.
+                  Tip: marcá animes como <b>vistas</b> (✓) para que no te los recomiende. Ahora también podés usar{" "}
+                  <b>No me gustó → ¿Qué evitar?</b> para bloquearlos.
                 </p>
               </div>
 
@@ -761,8 +831,124 @@ const recommendFrom = useCallback((base: AnimeItem): AnimeItem[] => {
                           </div>
                         );
                       })}
-                      {recResults.length === 0 ? (
-                        <div className="emptyBox">No encontré recomendaciones (probá con otro anime).</div>
+                      {recResults.length === 0 ? <div className="emptyBox">No encontré recomendaciones (probá con otro anime).</div> : null}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* NUEVO MODAL: “No me gustó → ¿Qué evitar?” */}
+      {avoidOpen ? (
+        <div className="modalOverlay" role="dialog" aria-modal="true" onMouseDown={() => setAvoidOpen(false)}>
+          <div className="modal big" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="modalHead">
+              <div className="modalTitle">No me gustó → ¿Qué evitar?</div>
+              <button className="secondary" onClick={() => setAvoidOpen(false)}>
+                Cerrar
+              </button>
+            </div>
+
+            <div className="recGrid">
+              <div className="recLeft">
+                <label className="recLabel">
+                  Elegí el anime que <b>NO</b> te gustó
+                  <input value={avoidQuery} onChange={(e) => setAvoidQuery(e.target.value)} placeholder="Buscar..." />
+                </label>
+
+                <div className="recList">
+                  {avoidSearchList.map((a, i) => {
+                    const k = getKey(a);
+                    const t = getTitle(a);
+                    const active = avoidPick !== null ? getKey(avoidPick) === k : false;
+
+                    return (
+                      <button
+                        key={`${k}-${i}`}
+                        className={`recItem ${active ? "active" : ""}`}
+                        onClick={() => {
+                          setAvoidPick(a);
+
+                          // al elegirlo acá, lo marcamos como “no me gustó” y lo guardamos
+                          if (!disliked.has(k)) {
+                            const next = new Set(disliked);
+                            next.add(k);
+                            setDisliked(next);
+                            saveSet(LS_DISLIKED, next);
+                          }
+                        }}
+                      >
+                        <span className="recItemTitle">{t}</span>
+                        <span className="recItemMeta">
+                          {getYear(a) > 0 ? String(getYear(a)) : "—"} • {getType(a)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <p className="hint">
+                  Tip: esto te muestra animes <b>parecidos</b> (géneros, mood, tipo, año) para que sepas qué evitar.
+                </p>
+              </div>
+
+              <div className="recRight">
+                {avoidPick === null ? (
+                  <div className="emptyBox">Elegí un anime a la izquierda.</div>
+                ) : (
+                  <>
+                    <div className="recHeader">
+                      <div>
+                        <div className="recFrom">Si no te gustó:</div>
+                        <div className="recPick">{getTitle(avoidPick)}</div>
+                      </div>
+
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button className="secondary" onClick={() => toggleDisliked(avoidPick)}>
+                          {disliked.has(getKey(avoidPick)) ? "Quitar “No me gustó”" : "Marcar “No me gustó”"}
+                        </button>
+                        <button className="secondary" onClick={() => setAvoidPick(null)}>
+                          Cambiar
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="recCards">
+                      {avoidResults.slice(0, 12).map((a) => {
+                        const k = getKey(a);
+                        const t = getTitle(a);
+                        const cover = getCoverUrl(a);
+                        return (
+                          <div className="miniCard" key={`avoid-${k}`}>
+                            <div className={`miniCover ${cover.length === 0 ? "noimg" : ""}`}>
+                              {cover.length > 0 ? <img src={cover} alt={t} loading="lazy" /> : null}
+                              <div className="noCover">Sin portada</div>
+                            </div>
+                            <div className="miniBody">
+                              <div className="miniTitle" title={t}>
+                                {t}
+                              </div>
+                              <div className="miniMeta">
+                                {getYear(a) > 0 ? String(getYear(a)) : "—"} • {getType(a)}
+                              </div>
+                              <div className="miniBtns">
+                                <button className="secondary" onClick={() => openTrailer(a)}>
+                                  Trailer
+                                </button>
+                                <button className="icon" onClick={() => toggleFav(a)} title="Favorito">
+                                  {favs.has(k) ? "♥" : "♡"}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {avoidResults.length === 0 ? (
+                        <div className="emptyBox">No encontré animes parecidos para evitar (probá con otro).</div>
                       ) : null}
                     </div>
                   </>

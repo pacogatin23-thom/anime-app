@@ -19,6 +19,10 @@ function asNumber(v: unknown): number {
   }
   return 0;
 }
+function asNullableNumber(v: unknown): number | null {
+  const n = asNumber(v);
+  return n > 0 ? n : null;
+}
 function asStringArray(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
   return v
@@ -241,6 +245,77 @@ function saveSet(key: string, set: Set<string>): void {
 
 type SortMode = "AZ" | "YEAR_DESC" | "YEAR_ASC" | "EPS_DESC" | "EPS_ASC";
 
+/** ========= NUEVO: lectura segura de meta (sin romper) ========= */
+type AnimeMeta = {
+  filler?: {
+    canonEpisodes?: number | null;
+    fillerEpisodes?: number | null;
+    mixedEpisodes?: number | null;
+    totalEpisodesVerified?: number | null;
+    note?: string | null;
+    sourceUrl?: string | null;
+  };
+  seasons?: {
+    totalSeasons?: number | null;
+    note?: string | null;
+    sourceUrl?: string | null;
+  };
+  manga?: {
+    volumes?: number | null;
+    chapters?: number | null;
+    note?: string | null;
+    sourceUrl?: string | null;
+  };
+  adaptation?: {
+    mangaChaptersAdapted?: number | null;
+    animeEpisodes?: number | null;
+    differencePercent?: number | null;
+    summary?: string | null;
+    sourceUrl?: string | null;
+  };
+  studio?: {
+    studios?: string[];
+    sourceUrl?: string | null;
+  };
+  creator?: {
+    name?: string | null;
+    role?: string | null;
+    sourceUrl?: string | null;
+  };
+};
+
+function getMeta(a: AnimeItem): AnimeMeta | null {
+  const m = a["meta"];
+  return isRec(m) ? (m as unknown as AnimeMeta) : null;
+}
+
+function show(v: unknown): string {
+  if (v === null || v === undefined) return "No disponible";
+  if (typeof v === "string") return v.trim().length ? v : "No disponible";
+  if (typeof v === "number") return Number.isFinite(v) ? String(v) : "No disponible";
+  if (Array.isArray(v)) return v.length ? v.join(", ") : "No disponible";
+  return "No disponible";
+}
+
+function showPct(v: unknown): string {
+  const n = asNullableNumber(v);
+  if (n === null) return "No disponible";
+  return `${Math.round(n)}%`;
+}
+
+function SourceLink({ url }: { url: string | null | undefined }) {
+  if (!url || !isHttpUrl(url)) return null;
+  return (
+    <span className="metaSource">
+      {" "}
+      ·{" "}
+      <a href={url} target="_blank" rel="noreferrer">
+        fuente
+      </a>
+    </span>
+  );
+}
+
 export default function App() {
   const [animes, setAnimes] = useState<AnimeItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -270,7 +345,7 @@ export default function App() {
   const [recQuery, setRecQuery] = useState<string>("");
   const recQueryDebounced = useDebounced<string>(recQuery, 200);
 
-  // NUEVO: modal de “No me gustó → ¿Qué evitar?”
+  // modal de “No me gustó → ¿Qué evitar?”
   const [avoidOpen, setAvoidOpen] = useState<boolean>(false);
   const [avoidPick, setAvoidPick] = useState<AnimeItem | null>(null);
   const [avoidQuery, setAvoidQuery] = useState<string>("");
@@ -305,7 +380,6 @@ export default function App() {
   }, [animes]);
 
   useEffect(() => {
-    // setear rango cuando carga data
     if (animes.length === 0) return;
     setFromYear(yearRange.min);
     setToYear(yearRange.max);
@@ -443,7 +517,7 @@ export default function App() {
       const scored = animes
         .filter((a) => getKey(a) !== baseKey)
         .filter((a) => !seen.has(getKey(a)))
-        .filter((a) => !disliked.has(getKey(a))) // NUEVO: no recomendar lo que marcaste como “no me gustó”
+        .filter((a) => !disliked.has(getKey(a)))
         .map((a) => {
           let score = 0;
 
@@ -468,7 +542,6 @@ export default function App() {
     [animes, seen, disliked]
   );
 
-  // NUEVO: lista “para evitar” (similares a lo que NO te gustó)
   const avoidFrom = useCallback(
     (base: AnimeItem): AnimeItem[] => {
       const baseGenres = new Set(getGenres(base).map((g) => g.toLowerCase()));
@@ -479,7 +552,7 @@ export default function App() {
 
       const scored = animes
         .filter((a) => getKey(a) !== baseKey)
-        .filter((a) => !seen.has(getKey(a))) // “qué NO mirar” → te muestro cosas que todavía no viste
+        .filter((a) => !seen.has(getKey(a)))
         .map((a) => {
           let score = 0;
 
@@ -515,7 +588,6 @@ export default function App() {
     return recommendFrom(recPick);
   }, [recPick, recommendFrom]);
 
-  // NUEVO: búsqueda y resultados del modal “avoid”
   const avoidSearchList = useMemo(() => {
     const qq = avoidQueryDebounced.trim().toLowerCase();
     if (qq.length === 0) return animes.slice(0, 30);
@@ -546,8 +618,6 @@ export default function App() {
             <button className="secondary" onClick={() => setRecOpen(true)}>
               Ya la vi → Recomendame
             </button>
-
-            {/* NUEVO */}
             <button className="secondary" onClick={() => setAvoidOpen(true)}>
               No me gustó → ¿Qué evitar?
             </button>
@@ -659,6 +729,8 @@ export default function App() {
             const moods = getMood(a).slice(0, 2);
             const siteUrl = getSiteUrl(a);
 
+            const meta = getMeta(a);
+
             return (
               <article className="card" key={key}>
                 <div className={`cover ${cover.length === 0 ? "noimg" : ""}`}>
@@ -709,6 +781,53 @@ export default function App() {
                 </div>
 
                 <p className="desc">{getSynopsis(a)}</p>
+
+                {/* ✅ NUEVO: Detalles enriquecidos (con fallbacks) */}
+                <div className="detailsBox">
+                  <div className="detailsTitle">Detalles</div>
+
+                  <div className="detailsRow">
+                    <b>Relleno:</b>{" "}
+                    {meta?.filler
+                      ? `Canon ${show(meta.filler.canonEpisodes)} · Filler ${show(meta.filler.fillerEpisodes)} · Mixtos ${show(
+                          meta.filler.mixedEpisodes
+                        )}`
+                      : "No disponible"}
+                    <SourceLink url={meta?.filler?.sourceUrl} />
+                  </div>
+
+                  <div className="detailsRow">
+                    <b>Temporadas:</b> {meta?.seasons ? show(meta.seasons.totalSeasons) : "No disponible"}
+                    <SourceLink url={meta?.seasons?.sourceUrl} />
+                  </div>
+
+                  <div className="detailsRow">
+                    <b>Manga:</b>{" "}
+                    {meta?.manga ? `Tomos ${show(meta.manga.volumes)} · Capítulos ${show(meta.manga.chapters)}` : "No disponible"}
+                    <SourceLink url={meta?.manga?.sourceUrl} />
+                  </div>
+
+                  <div className="detailsRow">
+                    <b>Manga vs Anime:</b>{" "}
+                    {meta?.adaptation
+                      ? `Capítulos adaptados ${show(meta.adaptation.mangaChaptersAdapted)} · Diferencia ${showPct(
+                          meta.adaptation.differencePercent
+                        )}`
+                      : "No disponible"}
+                    <SourceLink url={meta?.adaptation?.sourceUrl} />
+                  </div>
+
+                  <div className="detailsRow">
+                    <b>Estudio:</b> {meta?.studio ? show(meta.studio.studios ?? []) : "No disponible"}
+                    <SourceLink url={meta?.studio?.sourceUrl} />
+                  </div>
+
+                  <div className="detailsRow">
+                    <b>Creador:</b>{" "}
+                    {meta?.creator ? `${show(meta.creator.name)}${meta.creator.role ? ` (${show(meta.creator.role)})` : ""}` : "No disponible"}
+                    <SourceLink url={meta?.creator?.sourceUrl} />
+                  </div>
+                </div>
 
                 <div className="cardActions">
                   <button className="secondary" onClick={() => openTrailer(a)}>
@@ -841,7 +960,6 @@ export default function App() {
         </div>
       ) : null}
 
-      {/* NUEVO MODAL: “No me gustó → ¿Qué evitar?” */}
       {avoidOpen ? (
         <div className="modalOverlay" role="dialog" aria-modal="true" onMouseDown={() => setAvoidOpen(false)}>
           <div className="modal big" onMouseDown={(e) => e.stopPropagation()}>
@@ -872,7 +990,6 @@ export default function App() {
                         onClick={() => {
                           setAvoidPick(a);
 
-                          // al elegirlo acá, lo marcamos como “no me gustó” y lo guardamos
                           if (!disliked.has(k)) {
                             const next = new Set(disliked);
                             next.add(k);
@@ -947,9 +1064,7 @@ export default function App() {
                         );
                       })}
 
-                      {avoidResults.length === 0 ? (
-                        <div className="emptyBox">No encontré animes parecidos para evitar (probá con otro).</div>
-                      ) : null}
+                      {avoidResults.length === 0 ? <div className="emptyBox">No encontré animes parecidos para evitar (probá con otro).</div> : null}
                     </div>
                   </>
                 )}

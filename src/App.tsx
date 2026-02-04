@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./styles/App.css";
 import type { Rec, AnimeItem, AnimeMeta } from "./types/anime.types";
 import type { SortMode } from "./types/app.types";
-import { LS_FAV, LS_SEEN, LS_DISLIKED } from "./constants/storage";
 import { isRec, isHttpUrl } from "./utils/typeGuards";
 import { asString, asNumber, asNullableNumber, asStringArray } from "./utils/parsers";
 import { stripHtml, show, showPct } from "./utils/formatters";
@@ -22,9 +21,9 @@ import {
   getKey,
   getMeta,
 } from "./utils/animeGetters";
-import { loadSet, saveSet } from "./services/localStorage.service";
 import { useDebounced } from "./hooks/useDebounced";
 import { useAnimeData } from "./hooks/useAnimeData";
+import { useAnimeStorage } from "./hooks/useAnimeStorage";
 
 function SourceLink({ url }: { url: string | null | undefined }) {
   if (!url || !isHttpUrl(url)) return null;
@@ -41,6 +40,7 @@ function SourceLink({ url }: { url: string | null | undefined }) {
 
 export default function App() {
   const { animes, loading } = useAnimeData();
+  const { favs, seen, disliked, toggleFav, toggleSeen, toggleDisliked } = useAnimeStorage();
 
   const [q, setQ] = useState<string>("");
   const qDebounced = useDebounced<string>(q, 250);
@@ -54,9 +54,6 @@ export default function App() {
   const pageSize = 24;
   const [visibleCount, setVisibleCount] = useState<number>(pageSize);
 
-  const [favs, setFavs] = useState<Set<string>>(() => loadSet(LS_FAV));
-  const [seen, setSeen] = useState<Set<string>>(() => loadSet(LS_SEEN));
-  const [disliked, setDisliked] = useState<Set<string>>(() => loadSet(LS_DISLIKED));
   const [onlyFavs, setOnlyFavs] = useState<boolean>(false);
 
   const [trailerId, setTrailerId] = useState<string>("");
@@ -158,33 +155,6 @@ export default function App() {
   }, [qDebounced, genre, type, fromYear, toYear, sort, onlyFavs]);
 
   const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
-
-  function toggleFav(a: AnimeItem): void {
-    const key = getKey(a);
-    const next = new Set(favs);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    setFavs(next);
-    saveSet(LS_FAV, next);
-  }
-
-  function toggleSeen(a: AnimeItem): void {
-    const key = getKey(a);
-    const next = new Set(seen);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    setSeen(next);
-    saveSet(LS_SEEN, next);
-  }
-
-  function toggleDisliked(a: AnimeItem): void {
-    const key = getKey(a);
-    const next = new Set(disliked);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    setDisliked(next);
-    saveSet(LS_DISLIKED, next);
-  }
 
   function openTrailer(a: AnimeItem): void {
     const id = getTrailerId(a);
@@ -694,10 +664,7 @@ export default function App() {
                           setAvoidPick(a);
 
                           if (!disliked.has(k)) {
-                            const next = new Set(disliked);
-                            next.add(k);
-                            setDisliked(next);
-                            saveSet(LS_DISLIKED, next);
+                            toggleDisliked(a);
                           }
                         }}
                       >

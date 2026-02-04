@@ -24,6 +24,7 @@ import {
 } from "./utils/animeGetters";
 import { loadSet, saveSet } from "./services/localStorage.service";
 import { useDebounced } from "./hooks/useDebounced";
+import { useAnimeData } from "./hooks/useAnimeData";
 
 function SourceLink({ url }: { url: string | null | undefined }) {
   if (!url || !isHttpUrl(url)) return null;
@@ -39,8 +40,7 @@ function SourceLink({ url }: { url: string | null | undefined }) {
 }
 
 export default function App() {
-  const [animes, setAnimes] = useState<AnimeItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const { animes, loading } = useAnimeData();
 
   const [q, setQ] = useState<string>("");
   const qDebounced = useDebounced<string>(q, 250);
@@ -74,25 +74,6 @@ export default function App() {
   const avoidQueryDebounced = useDebounced<string>(avoidQuery, 200);
 
   const topRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const load = async (): Promise<void> => {
-      setLoading(true);
-      try {
-        const r = await fetch("/data/animes.json", { cache: "no-store" });
-        const text = await r.text();
-        const data = safeJsonParse(text);
-        const arr = extractAnimeArray(data);
-        setAnimes(arr);
-      } catch {
-        setAnimes([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void load();
-  }, []);
 
   const yearRange = useMemo(() => {
     const years = animes.map(getYear).filter((y) => y > 0);

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import "./App.css";
+import "./styles/App.css";
 
 type Rec = Record<string, unknown>;
 type AnimeItem = Rec;
@@ -604,7 +604,7 @@ export default function App() {
       <header className="top" ref={topRef}>
         <div className="titleRow">
           <div>
-            <h1>¿Qué anime veo hoy?</h1>
+            <h1>Que anime queres conocer</h1>
             <p className="subtitle">
               Base cargada: <b>{animes.length.toLocaleString("es-AR")}</b> animes
               {loading ? " (cargando...)" : ""}

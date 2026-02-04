@@ -4,211 +4,25 @@ import "./styles/App.css";
 import type { Rec, AnimeItem, AnimeMeta } from "./types/anime.types";
 import type { SortMode } from "./types/app.types";
 import { LS_FAV, LS_SEEN, LS_DISLIKED } from "./constants/storage";
-
-function isRec(v: unknown): v is Rec {
-  return typeof v === "object" && v !== null;
-}
-function asString(v: unknown): string {
-  return typeof v === "string" ? v : "";
-}
-function asNumber(v: unknown): number {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string") {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : 0;
-  }
-  return 0;
-}
-function asNullableNumber(v: unknown): number | null {
-  const n = asNumber(v);
-  return n > 0 ? n : null;
-}
-function asStringArray(v: unknown): string[] {
-  if (!Array.isArray(v)) return [];
-  return v
-    .map((x) => (typeof x === "string" ? x : String(x)))
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-}
-function isHttpUrl(v: unknown): v is string {
-  return typeof v === "string" && /^https?:\/\//i.test(v);
-}
-
-function safeJsonParse(text: string): unknown {
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    return null;
-  }
-}
-
-function extractAnimeArray(data: unknown): AnimeItem[] {
-  if (Array.isArray(data)) return data.filter(isRec);
-
-  if (isRec(data)) {
-    const a1 = data["animes"];
-    if (Array.isArray(a1)) return a1.filter(isRec);
-
-    const a2 = data["results"];
-    if (Array.isArray(a2)) return a2.filter(isRec);
-
-    const a3 = data["data"];
-    if (Array.isArray(a3)) return a3.filter(isRec);
-  }
-
-  return [];
-}
-
-function stripHtml(s: string): string {
-  return s
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
-function getTitle(a: AnimeItem): string {
-  const titulo = asString(a["titulo"]);
-  if (titulo.length > 0) return titulo;
-
-  const title = a["title"];
-  if (typeof title === "string" && title.trim().length > 0) return title.trim();
-
-  if (isRec(title)) {
-    const en = asString(title["english"]);
-    const ro = asString(title["romaji"]);
-    const na = asString(title["native"]);
-    if (en.length > 0) return en;
-    if (ro.length > 0) return ro;
-    if (na.length > 0) return na;
-  }
-
-  return "Sin título";
-}
-
-function getYear(a: AnimeItem): number {
-  const y1 = asNumber(a["anio"]);
-  if (y1 > 0) return y1;
-
-  const y2 = asNumber(a["seasonYear"]);
-  if (y2 > 0) return y2;
-
-  const startDate = a["startDate"];
-  if (isRec(startDate)) {
-    const y3 = asNumber(startDate["year"]);
-    if (y3 > 0) return y3;
-  }
-
-  return 0;
-}
-
-function getType(a: AnimeItem): string {
-  const t1 = asString(a["tipo"]);
-  if (t1.length > 0) return t1;
-
-  const t2 = asString(a["format"]);
-  if (t2.length > 0) return t2;
-
-  return "—";
-}
-
-function getEpisodes(a: AnimeItem): number {
-  const e1 = asNumber(a["episodios"]);
-  if (e1 > 0) return e1;
-
-  const e2 = asNumber(a["episodes"]);
-  if (e2 > 0) return e2;
-
-  return 0;
-}
-
-function getGenres(a: AnimeItem): string[] {
-  const g1 = asStringArray(a["genres"]);
-  if (g1.length > 0) return g1;
-
-  const g2 = asStringArray(a["genero"]);
-  if (g2.length > 0) return g2;
-
-  // fallback: tags[] -> name
-  const tags = a["tags"];
-  if (Array.isArray(tags)) {
-    const out: string[] = [];
-    for (const t of tags) {
-      if (isRec(t)) {
-        const name = asString(t["name"]);
-        if (name.length > 0) out.push(name);
-      }
-    }
-    return out;
-  }
-
-  return [];
-}
-
-function getMood(a: AnimeItem): string[] {
-  return asStringArray(a["mood"]);
-}
-
-function getSynopsis(a: AnimeItem): string {
-  const d1 = asString(a["desc"]);
-  if (d1.length > 0) return d1;
-
-  const d2raw = asString(a["description"]);
-  if (d2raw.length > 0) return stripHtml(d2raw);
-
-  return "Sin descripción.";
-}
-
-function getSiteUrl(a: AnimeItem): string {
-  const u = a["siteUrl"];
-  return isHttpUrl(u) ? u : "";
-}
-
-function getTrailerId(a: AnimeItem): string {
-  const t = a["trailer"];
-  if (!isRec(t)) return "";
-  const id = asString(t["id"]);
-  const site = asString(t["site"]).toLowerCase();
-  return id.length > 0 && site === "youtube" ? id : "";
-}
-
-function getCoverUrl(a: AnimeItem): string {
-  const cover = a["cover"];
-  if (isHttpUrl(cover)) return cover;
-
-  if (isRec(cover)) {
-    const url = cover["url"];
-    const xl = cover["extraLarge"];
-    const lg = cover["large"];
-    const md = cover["medium"];
-
-    if (isHttpUrl(url)) return url;
-    if (isHttpUrl(xl)) return xl;
-    if (isHttpUrl(lg)) return lg;
-    if (isHttpUrl(md)) return md;
-  }
-
-  const coverImage = a["coverImage"];
-  if (isRec(coverImage)) {
-    const xl = coverImage["extraLarge"];
-    const lg = coverImage["large"];
-    const md = coverImage["medium"];
-
-    if (isHttpUrl(xl)) return xl;
-    if (isHttpUrl(lg)) return lg;
-    if (isHttpUrl(md)) return md;
-  }
-
-  return "";
-}
-
-function getKey(a: AnimeItem): string {
-  const id = a["id"];
-  if (typeof id === "string" && id.length > 0) return id;
-  if (typeof id === "number" && Number.isFinite(id)) return String(id);
-  return `${getTitle(a)}-${getYear(a)}-${getType(a)}`.toLowerCase();
-}
+import { isRec, isHttpUrl } from "./utils/typeGuards";
+import { asString, asNumber, asNullableNumber, asStringArray } from "./utils/parsers";
+import { stripHtml, show, showPct } from "./utils/formatters";
+import { safeJsonParse, extractAnimeArray } from "./utils/dataExtractor";
+import {
+  getTitle,
+  getYear,
+  getType,
+  getEpisodes,
+  getGenres,
+  getMood,
+  getSynopsis,
+  getSiteUrl,
+  getTrailerId,
+  getCoverUrl,
+  getKey,
+  getMeta,
+} from "./utils/animeGetters";
+import { loadSet, saveSet } from "./services/localStorage.service";
 
 function useDebounced<T>(value: T, ms = 250): T {
   const [v, setV] = useState<T>(value);
@@ -217,45 +31,6 @@ function useDebounced<T>(value: T, ms = 250): T {
     return () => window.clearTimeout(t);
   }, [value, ms]);
   return v;
-}
-
-function loadSet(key: string): Set<string> {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw === null) return new Set<string>();
-    const parsed = safeJsonParse(raw);
-    if (!Array.isArray(parsed)) return new Set<string>();
-    return new Set<string>(parsed.map((x) => String(x)));
-  } catch {
-    return new Set<string>();
-  }
-}
-
-function saveSet(key: string, set: Set<string>): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(Array.from(set)));
-  } catch {
-    /* ignore (quota / privado) */
-  }
-}
-
-function getMeta(a: AnimeItem): AnimeMeta | null {
-  const m = a["meta"];
-  return isRec(m) ? (m as unknown as AnimeMeta) : null;
-}
-
-function show(v: unknown): string {
-  if (v === null || v === undefined) return "No disponible";
-  if (typeof v === "string") return v.trim().length ? v : "No disponible";
-  if (typeof v === "number") return Number.isFinite(v) ? String(v) : "No disponible";
-  if (Array.isArray(v)) return v.length ? v.join(", ") : "No disponible";
-  return "No disponible";
-}
-
-function showPct(v: unknown): string {
-  const n = asNullableNumber(v);
-  if (n === null) return "No disponible";
-  return `${Math.round(n)}%`;
 }
 
 function SourceLink({ url }: { url: string | null | undefined }) {

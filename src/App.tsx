@@ -27,6 +27,7 @@ import { useAnimeStorage } from "./hooks/useAnimeStorage";
 import { useAnimeFilters } from "./hooks/useAnimeFilters";
 import Header from "./components/Header";
 import AnimeGrid from "./components/AnimeGrid";
+import TrailerModal from "./components/TrailerModal";
 
 export default function App() {
   const { animes, loading } = useAnimeData();
@@ -242,26 +243,7 @@ export default function App() {
         />
       </main>
 
-      {trailerId.length > 0 ? (
-        <div className="modalOverlay" role="dialog" aria-modal="true" onMouseDown={closeTrailer}>
-          <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="modalHead">
-              <div className="modalTitle">{trailerTitle}</div>
-              <button className="secondary" onClick={closeTrailer}>
-                Cerrar
-              </button>
-            </div>
-            <div className="videoWrap">
-              <iframe
-                src={`https://www.youtube.com/embed/${trailerId}?autoplay=1`}
-                title="Trailer"
-                allow="autoplay; encrypted-media"
-                allowFullScreen
-              />
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <TrailerModal open={trailerId.length > 0} trailerId={trailerId} title={trailerTitle} onClose={closeTrailer} />
 
       {recOpen ? (
         <div className="modalOverlay" role="dialog" aria-modal="true" onMouseDown={() => setRecOpen(false)}>

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import "./styles/App.css";
-
-type Rec = Record<string, unknown>;
-type AnimeItem = Rec;
+import type { Rec, AnimeItem, AnimeMeta } from "./types/anime.types";
+import type { SortMode } from "./types/app.types";
+import { LS_FAV, LS_SEEN, LS_DISLIKED } from "./constants/storage";
 
 function isRec(v: unknown): v is Rec {
   return typeof v === "object" && v !== null;
@@ -219,10 +219,6 @@ function useDebounced<T>(value: T, ms = 250): T {
   return v;
 }
 
-const LS_FAV = "animeapp:favs";
-const LS_SEEN = "animeapp:seen";
-const LS_DISLIKED = "animeapp:disliked";
-
 function loadSet(key: string): Set<string> {
   try {
     const raw = localStorage.getItem(key);
@@ -242,47 +238,6 @@ function saveSet(key: string, set: Set<string>): void {
     /* ignore (quota / privado) */
   }
 }
-
-type SortMode = "AZ" | "YEAR_DESC" | "YEAR_ASC" | "EPS_DESC" | "EPS_ASC";
-
-/** ========= NUEVO: lectura segura de meta (sin romper) ========= */
-type AnimeMeta = {
-  filler?: {
-    canonEpisodes?: number | null;
-    fillerEpisodes?: number | null;
-    mixedEpisodes?: number | null;
-    totalEpisodesVerified?: number | null;
-    note?: string | null;
-    sourceUrl?: string | null;
-  };
-  seasons?: {
-    totalSeasons?: number | null;
-    note?: string | null;
-    sourceUrl?: string | null;
-  };
-  manga?: {
-    volumes?: number | null;
-    chapters?: number | null;
-    note?: string | null;
-    sourceUrl?: string | null;
-  };
-  adaptation?: {
-    mangaChaptersAdapted?: number | null;
-    animeEpisodes?: number | null;
-    differencePercent?: number | null;
-    summary?: string | null;
-    sourceUrl?: string | null;
-  };
-  studio?: {
-    studios?: string[];
-    sourceUrl?: string | null;
-  };
-  creator?: {
-    name?: string | null;
-    role?: string | null;
-    sourceUrl?: string | null;
-  };
-};
 
 function getMeta(a: AnimeItem): AnimeMeta | null {
   const m = a["meta"];

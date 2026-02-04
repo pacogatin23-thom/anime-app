@@ -23,15 +23,7 @@ import {
   getMeta,
 } from "./utils/animeGetters";
 import { loadSet, saveSet } from "./services/localStorage.service";
-
-function useDebounced<T>(value: T, ms = 250): T {
-  const [v, setV] = useState<T>(value);
-  useEffect(() => {
-    const t = window.setTimeout(() => setV(value), ms);
-    return () => window.clearTimeout(t);
-  }, [value, ms]);
-  return v;
-}
+import { useDebounced } from "./hooks/useDebounced";
 
 function SourceLink({ url }: { url: string | null | undefined }) {
   if (!url || !isHttpUrl(url)) return null;

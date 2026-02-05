@@ -30,8 +30,12 @@ import AnimeGrid from "./components/AnimeGrid";
 import TrailerModal from "./components/TrailerModal";
 import RecommendationModal from "./components/RecommendationModal";
 import AvoidModal from "./components/AvoidModal";
+import Blog from "./pages/Blog";
+
+type View = "animes" | "blog";
 
 export default function App() {
+  const [view, setView] = useState<View>("animes");
   const { animes, loading } = useAnimeData();
   const { favs, seen, disliked, toggleFav, toggleSeen, toggleDisliked } = useAnimeStorage();
   const {
@@ -97,34 +101,38 @@ export default function App() {
 
   return (
     <div className="page">
-      <Header
-        topRef={topRef}
-        animes={animes}
-        loading={loading}
-        onlyFavs={onlyFavs}
-        setOnlyFavs={setOnlyFavs}
-        setRecOpen={setRecOpen}
-        setAvoidOpen={setAvoidOpen}
-        q={q}
-        setQ={setQ}
-        fromYear={fromYear}
-        setFromYear={setFromYear}
-        toYear={toYear}
-        setToYear={setToYear}
-        genre={genre}
-        setGenre={setGenre}
-        type={type}
-        setType={setType}
-        sort={sort}
-        setSort={setSort}
-        yearRange={yearRange}
-        yearOptions={yearOptions}
-        genreOptions={genreOptions}
-        typeOptions={typeOptions}
-        onRandomPick={randomPick}
-      />
+      {view === "animes" && (
+        <Header
+          topRef={topRef}
+          animes={animes}
+          loading={loading}
+          onlyFavs={onlyFavs}
+          setOnlyFavs={setOnlyFavs}
+          setRecOpen={setRecOpen}
+          setAvoidOpen={setAvoidOpen}
+          q={q}
+          setQ={setQ}
+          fromYear={fromYear}
+          setFromYear={setFromYear}
+          toYear={toYear}
+          setToYear={setToYear}
+          genre={genre}
+          setGenre={setGenre}
+          type={type}
+          setType={setType}
+          sort={sort}
+          setSort={setSort}
+          yearRange={yearRange}
+          yearOptions={yearOptions}
+          genreOptions={genreOptions}
+          typeOptions={typeOptions}
+          onRandomPick={randomPick}
+          onNavigateToBlog={() => setView("blog")}
+        />
+      )}
 
-      <main className="container">
+      {view === "animes" && (
+        <main className="container">
         <div className="pager">
           <p className="counter">
             Mostrando <b>{visible.length}</b> de <b>{filtered.length}</b>
@@ -147,6 +155,9 @@ export default function App() {
           onOpenTrailer={openTrailer}
         />
       </main>
+      )}
+
+      {view === "blog" && <Blog onNavigateToAnimes={() => setView("animes")} />}
 
       <TrailerModal open={trailerId.length > 0} trailerId={trailerId} title={trailerTitle} onClose={closeTrailer} />
 

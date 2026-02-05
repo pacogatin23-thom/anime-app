@@ -25,6 +25,7 @@ interface HeaderProps {
   genreOptions: string[];
   typeOptions: string[];
   onRandomPick: () => void;
+  onNavigateToBlog: () => void;
 }
 
 export default function Header({
@@ -52,6 +53,7 @@ export default function Header({
   genreOptions,
   typeOptions,
   onRandomPick,
+  onNavigateToBlog,
 }: HeaderProps) {
   return (
     <header className="top" ref={topRef}>
@@ -65,6 +67,9 @@ export default function Header({
         </div>
 
         <div className="topActions">
+          <button className="secondary" onClick={onNavigateToBlog}>
+            Blog
+          </button>
           <button className="secondary" onClick={() => setOnlyFavs((v) => !v)}>
             {onlyFavs ? "★ Viendo Favoritos" : "☆ Favoritos"}
           </button>

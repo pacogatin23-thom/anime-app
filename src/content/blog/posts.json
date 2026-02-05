@@ -1,0 +1,20 @@
+[
+  {
+    "id": "1",
+    "title": "Introducción a React y TypeScript",
+    "slug": "introduccion-react-typescript",
+    "excerpt": "Aprende los fundamentos de React con TypeScript y cómo configurar tu primer proyecto.",
+    "content": "React con TypeScript ofrece una experiencia de desarrollo robusta y segura. Al combinar la flexibilidad de React con el tipado estático de TypeScript, podemos construir aplicaciones más mantenibles y menos propensas a errores.\n\nEn este post exploramos los conceptos básicos: componentes funcionales, props tipadas, hooks con tipos personalizados y las mejores prácticas para estructurar tu código.\n\nEl ecosistema de React ha evolucionado significativamente, y TypeScript se ha convertido en el estándar de facto para proyectos medianos y grandes.",
+    "tags": ["react", "typescript", "tutorial"],
+    "date": "2026-01-15"
+  },
+  {
+    "id": "2",
+    "title": "Optimización de rendimiento en aplicaciones web",
+    "slug": "optimizacion-rendimiento-web",
+    "excerpt": "Técnicas prácticas para mejorar el rendimiento de tus aplicaciones React y reducir tiempos de carga.",
+    "content": "El rendimiento es crucial para la experiencia del usuario. En este artículo cubrimos técnicas esenciales: lazy loading, code splitting, memoización de componentes con React.memo, y optimización de re-renders innecesarios.\n\nTambién exploramos herramientas de profiling como React DevTools y Lighthouse para identificar cuellos de botella. Pequeñas optimizaciones pueden tener un impacto significativo en aplicaciones grandes.\n\nRecuerda: optimiza solo cuando sea necesario. Mide primero, optimiza después.",
+    "tags": ["performance", "optimization", "react", "web"],
+    "date": "2026-01-28"
+  }
+]

@@ -53,6 +53,8 @@ export default function App() {
     setSort,
     onlyFavs,
     setOnlyFavs,
+    safeMode,
+    setSafeMode,
     visibleCount,
     setVisibleCount,
     yearRange,
@@ -108,6 +110,8 @@ export default function App() {
           loading={loading}
           onlyFavs={onlyFavs}
           setOnlyFavs={setOnlyFavs}
+          safeMode={safeMode}
+          setSafeMode={setSafeMode}
           setRecOpen={setRecOpen}
           setAvoidOpen={setAvoidOpen}
           q={q}

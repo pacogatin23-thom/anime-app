@@ -10,7 +10,7 @@ interface UseAnimeFiltersParams {
 }
 
 export function useAnimeFilters({ animes, favs }: UseAnimeFiltersParams) {
-  const [q, setQ] = useState<string>("");
+  const [q, setQ] = useState<string>("Naruto");
   const qDebounced = useDebounced<string>(q, 250);
 
   const [genre, setGenre] = useState<string>("todos");
@@ -23,6 +23,7 @@ export function useAnimeFilters({ animes, favs }: UseAnimeFiltersParams) {
   const [visibleCount, setVisibleCount] = useState<number>(pageSize);
 
   const [onlyFavs, setOnlyFavs] = useState<boolean>(false);
+  const [safeMode, setSafeMode] = useState<boolean>(true);
 
   const yearRange = useMemo(() => {
     const years = animes.map(getYear).filter((y) => y > 0);
@@ -57,6 +58,13 @@ export function useAnimeFilters({ animes, favs }: UseAnimeFiltersParams) {
       .map(([k]) => k);
   }, [animes]);
 
+  // Setear género en "shonen" si existe, solo una vez al cargar
+  useEffect(() => {
+    if (animes.length > 0 && genreOptions.includes("shonen")) {
+      setGenre("shonen");
+    }
+  }, [animes.length]); // Solo cuando se carga la data
+
   const typeOptions = useMemo(() => {
     const set = new Set<string>();
     for (const a of animes) {
@@ -68,6 +76,14 @@ export function useAnimeFilters({ animes, favs }: UseAnimeFiltersParams) {
 
   const filtered = useMemo(() => {
     let list = animes;
+
+    // Modo seguro: excluir contenido adulto
+    if (safeMode) {
+      list = list.filter((a) => {
+        const genres = getGenres(a).map((g) => g.toLowerCase());
+        return !genres.includes("ecchi") && !genres.includes("hentai");
+      });
+    }
 
     if (onlyFavs) list = list.filter((a) => favs.has(getKey(a)));
 
@@ -100,11 +116,11 @@ export function useAnimeFilters({ animes, favs }: UseAnimeFiltersParams) {
     });
 
     return sorted;
-  }, [animes, onlyFavs, favs, genre, type, fromYear, toYear, qDebounced, sort]);
+  }, [animes, safeMode, onlyFavs, favs, genre, type, fromYear, toYear, qDebounced, sort]);
 
   useEffect(() => {
     setVisibleCount(pageSize);
-  }, [qDebounced, genre, type, fromYear, toYear, sort, onlyFavs]);
+  }, [qDebounced, genre, type, fromYear, toYear, sort, onlyFavs, safeMode]);
 
   const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
 
@@ -124,6 +140,8 @@ export function useAnimeFilters({ animes, favs }: UseAnimeFiltersParams) {
     setSort,
     onlyFavs,
     setOnlyFavs,
+    safeMode,
+    setSafeMode,
     visibleCount,
     setVisibleCount,
     // Datos computados

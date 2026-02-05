@@ -6,6 +6,8 @@ interface HeaderProps {
   loading: boolean;
   onlyFavs: boolean;
   setOnlyFavs: (value: boolean | ((prev: boolean) => boolean)) => void;
+  safeMode: boolean;
+  setSafeMode: (value: boolean | ((prev: boolean) => boolean)) => void;
   setRecOpen: (value: boolean) => void;
   setAvoidOpen: (value: boolean) => void;
   q: string;
@@ -34,6 +36,8 @@ export default function Header({
   loading,
   onlyFavs,
   setOnlyFavs,
+  safeMode,
+  setSafeMode,
   setRecOpen,
   setAvoidOpen,
   q,
@@ -83,6 +87,11 @@ export default function Header({
       </div>
 
       <div className="controls">
+        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <input type="checkbox" checked={safeMode} onChange={(e) => setSafeMode(e.target.checked)} />
+          Modo seguro (oculta contenido adulto)
+        </label>
+
         <label>
           Buscar
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ej: Naruto, One Piece..." />

@@ -19,21 +19,23 @@ export default function Blog({ onNavigateToAnimes }: BlogProps) {
   const posts = postsData as BlogPost[];
 
   return (
-    <div style={{ maxWidth: "800px", margin: "0 auto", padding: "2rem 1rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-        <h1 style={{ margin: 0 }}>Blog</h1>
-        <button onClick={onNavigateToAnimes} style={{ padding: "0.5rem 1rem" }}>
-          ← Volver a Animes
-        </button>
-      </div>
-      <p style={{ color: "#666", marginBottom: "2rem" }}>
-        {posts.length} {posts.length === 1 ? "post" : "posts"}
-      </p>
-      
-      <div>
-        {posts.map((post) => (
-          <BlogPostCard key={post.id} post={post} />
-        ))}
+    <div className="blogPage">
+      <div className="blogContainer">
+        <div className="blogHeader">
+          <h1 className="blogTitle">Blog</h1>
+          <button onClick={onNavigateToAnimes} className="blogBackBtn">
+            ← Volver a Animes
+          </button>
+        </div>
+        <p className="blogSubtitle">
+          {posts.length} {posts.length === 1 ? "post" : "posts"}
+        </p>
+        
+        <div className="blogPosts">
+          {posts.map((post) => (
+            <BlogPostCard key={post.id} post={post} />
+          ))}
+        </div>
       </div>
     </div>
   );

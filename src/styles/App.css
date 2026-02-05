@@ -532,3 +532,154 @@ main.container {
   width: min(1200px, calc(100% - 32px));
   margin: 0 auto;
 }
+
+/* ========================================
+   BLOG STYLES
+   ======================================== */
+
+.blogPage {
+  min-height: 100vh;
+  background: #fafafa;
+  padding: 0;
+}
+
+.blogContainer {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  background: white;
+  min-height: 100vh;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.1);
+}
+
+.blogHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e5e5;
+}
+
+.blogTitle {
+  margin: 0;
+  font-size: 42px;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: -1px;
+}
+
+.blogBackBtn {
+  padding: 0.75rem 1.5rem;
+  background: white;
+  color: #666;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.blogBackBtn:hover {
+  background: #f5f5f5;
+  border-color: #999;
+  color: #333;
+}
+
+.blogSubtitle {
+  color: #666;
+  margin: 0 0 3rem;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.blogPosts {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+/* Blog Post Card */
+.blogPostCard {
+  padding: 2rem 0;
+  border-bottom: 1px solid #e5e5e5;
+  transition: all 0.2s;
+}
+
+.blogPostCard:last-child {
+  border-bottom: none;
+}
+
+.postTitle {
+  margin: 0 0 0.75rem;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.3;
+  letter-spacing: -0.5px;
+}
+
+.postTitle:hover {
+  color: #FF2BD6;
+  cursor: pointer;
+}
+
+.postDate {
+  display: block;
+  color: #999;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.postExcerpt {
+  margin: 0 0 1.25rem;
+  color: #444;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.postTags {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.postTag {
+  background: #f0f0f0;
+  color: #666;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.postTag:hover {
+  background: #FF2BD6;
+  color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .blogContainer {
+    padding: 2rem 1.5rem;
+  }
+  
+  .blogTitle {
+    font-size: 32px;
+  }
+  
+  .blogHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .postTitle {
+    font-size: 24px;
+  }
+}

@@ -10,7 +10,7 @@ interface UseAnimeFiltersParams {
 }
 
 export function useAnimeFilters({ animes, favs }: UseAnimeFiltersParams) {
-  const [q, setQ] = useState<string>("Naruto");
+  const [q, setQ] = useState<string>("");
   const qDebounced = useDebounced<string>(q, 250);
 
   const [genre, setGenre] = useState<string>("todos");

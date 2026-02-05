@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import type { AnimeItem } from "../types/anime.types";
 import {
   getKey,
@@ -35,6 +36,25 @@ export default function AnimeCard({ anime: a, favs, seen, onToggleFav, onToggleS
   const moods = getMood(a).slice(0, 2);
   const siteUrl = getSiteUrl(a);
   const meta = getMeta(a);
+
+  const [rating, setRating] = useState<number>(0);
+
+  useEffect(() => {
+    const storageKey = `animeRating:${key}`;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      const parsed = parseInt(saved, 10);
+      if (parsed >= 1 && parsed <= 5) {
+        setRating(parsed);
+      }
+    }
+  }, [key]);
+
+  const handleRating = (stars: number) => {
+    setRating(stars);
+    const storageKey = `animeRating:${key}`;
+    localStorage.setItem(storageKey, String(stars));
+  };
 
   return (
     <article className="card" key={key}>
@@ -86,6 +106,23 @@ export default function AnimeCard({ anime: a, favs, seen, onToggleFav, onToggleS
       </div>
 
       <p className="desc">{getSynopsis(a)}</p>
+
+      {/* Rating con estrellas */}
+      <div className="ratingBox">
+        <span className="ratingLabel">Tu puntuación:</span>
+        <div className="stars">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              className={`starBtn ${star <= rating ? "filled" : ""}`}
+              onClick={() => handleRating(star)}
+              title={`${star} estrella${star > 1 ? "s" : ""}`}
+            >
+              ⭐
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* ✅ NUEVO: Detalles enriquecidos (con fallbacks) */}
       <div className="detailsBox">

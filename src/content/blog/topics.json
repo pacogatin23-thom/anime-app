@@ -1,0 +1,26 @@
+[
+  {
+    "id": "1",
+    "title": "¿Cuál es el anime más sobrevalorado de la temporada?",
+    "date": "2026-02-04",
+    "author": "Usuario1"
+  },
+  {
+    "id": "2",
+    "title": "Debate: ¿Los remakes son necesarios o solo cash grab?",
+    "date": "2026-02-03",
+    "author": "Usuario2"
+  },
+  {
+    "id": "3",
+    "title": "Recomendaciones de animes underrated que nadie habla",
+    "date": "2026-02-02",
+    "author": "Usuario3"
+  },
+  {
+    "id": "4",
+    "title": "¿Qué opinan del final de [nombre anime]? (sin spoilers)",
+    "date": "2026-02-01",
+    "author": "Usuario4"
+  }
+]

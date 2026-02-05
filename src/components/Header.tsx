@@ -62,28 +62,24 @@ export default function Header({
   return (
     <header className="top" ref={topRef}>
       <div className="titleRow">
-        <div>
+        <div className="titleWrapper">
           <h1>Que anime queres conocer</h1>
-          <p className="subtitle">
-            Base cargada: <b>{animes.length.toLocaleString("es-AR")}</b> animes
-            {loading ? " (cargando...)" : ""}
-          </p>
         </div>
+      </div>
 
-        <div className="topActions">
-          <button className="secondary" onClick={onNavigateToBlog}>
-            Blog
-          </button>
-          <button className="secondary" onClick={() => setOnlyFavs((v) => !v)}>
-            {onlyFavs ? "★ Viendo Favoritos" : "☆ Favoritos"}
-          </button>
-          <button className="secondary" onClick={() => setRecOpen(true)}>
-            Ya la vi → Recomendame
-          </button>
-          <button className="secondary" onClick={() => setAvoidOpen(true)}>
-            No me gustó → ¿Qué evitar?
-          </button>
-        </div>
+      <div className="topActions">
+        <button className="secondary" onClick={onNavigateToBlog}>
+          Blog
+        </button>
+        <button className="secondary" onClick={() => setOnlyFavs((v) => !v)}>
+          {onlyFavs ? "★ Viendo Favoritos" : "☆ Favoritos"}
+        </button>
+        <button className="secondary" onClick={() => setRecOpen(true)}>
+          Ya la vi → Recomendame
+        </button>
+        <button className="secondary" onClick={() => setAvoidOpen(true)}>
+          No me gustó → ¿Qué evitar?
+        </button>
       </div>
 
       <div className="controls">
